@@ -96,9 +96,13 @@ def generate_notebook(question_id, question_info):
             code_definition
         ]
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_definition)
+    func_name = func_match[1]
     template['cells'][5]['source'] = [
+                "import sys, os; sys.path.append(os.path.abspath('..'))\n",
+                'from timer import timethis\n',
                 's = Solution()\n',
-                's.{func}()'.format(func=func_match[1])
+                '{func} = timethis(s.{func})\n'.format(func=func_name),
+                '{func}()'.format(func=func_name)
         ]
     
     interval_start = (question_id-1) // 25 * 25 + 1

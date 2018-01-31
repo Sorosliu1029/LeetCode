@@ -40,7 +40,7 @@
         {
             "cell_type": "markdown",
             "metadata": {},
-            "source": [ "question detail url", "difficulty", "- Topic tags", "discuss url"]
+            "source": [ "difficulty", "- Topic tags", "question detail url", "discuss url"]
         },
         {
             "cell_type": "code",
