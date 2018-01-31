@@ -6,6 +6,7 @@ import requests
 import json
 import sys
 import os
+import re
 
 LEETCODE = 'https://leetcode.com/'
 
@@ -24,44 +25,91 @@ def get_question_info(s, title_slug):
     csrf_token = s.cookies.get('csrftoken', domain='leetcode.com', path='/')
     assert csrf_token is not None
 
-    query="""{
+    query = """
+        query getQuestionDetail($titleSlug: String!)
+            {
+                question(titleSlug: $titleSlug)
+                {
+                    questionFrontendId
+                    questionTitleSlug
+                    questionTitle
+                    content
+                    sampleTestCase
+                    questionDetailUrl
+                    difficulty
+                    discussUrl
+                    topicTags
+                    codeDefinition                                        
+                }
+            }"""
+
+    graphql_query = {
         "operationName": "getQuestionDetail",
-        "query": 
-            "query 
-                getQuestionDetail($titleSlug: String!) 
-                    {
-                        question(titleSlug: $titleSlug) 
-                            { 
-                                questionId
-                                content
-                            }
-                    }",
+        "query": query,
         "variables": {
-            "titleSlug": "%s"
+            "titleSlug": title_slug
         }
-    }"""
+    }
 
     headers = {
         'x-csrftoken': csrf_token,
-        'Refer': 'https://leetcode.com',
+        'Referer': 'https://leetcode.com',
         'Content-Type': 'application/json',
         'Cache-Control': "no-cache"
     }
 
-    print(headers)
-    print(query % title_slug)
-    print(s.cookies)
     resp = s.post(
             '{domain}{url}'.format(domain=LEETCODE, url='graphql'),
-            json=(query % title_slug),
-            headers=headers
+            json=graphql_query,
+            headers=headers,
        )
     
     if resp.ok:
-        print('ok here')
         question_info = resp.json()
-        print(question_info)
+        return question_info
+
+def get_code_definition(code_definitions, language='python3'):
+    for code_definition in code_definitions:
+        if code_definition['value'] == language:
+            return code_definition['defaultCode']
     
+def generate_notebook(question_id, question_info):
+    with open('notebook.template.json', 'rt') as f:
+        template = json.load(f)
+    template['metadata']['language_info']['version'] = "{}.{}.{}".format(*sys.version_info[:3])
+    template['cells'][0]['source'] = ['### {frontend_id}. {title}'.format(frontend_id=question_info['questionFrontendId'], title=question_info['questionTitle'])]
+    template['cells'][1]['source'] = [ '#### Content\n', question_info['content'] ]
+    template['cells'][2]['source'] = [ '#### Sample Test Case\n', question_info['sampleTestCase'] ]
+    template['cells'][3]['source'] = [
+            '#### Difficulty: {}\n\n'.format(question_info['difficulty']),
+            '#### Question Tags:\n'
+        ] + \
+        list(map(lambda t: '- {}\n'.format(t['name']), json.loads(question_info['topicTags']))) + \
+        [
+            '\n',
+            '[Question Detail](https://leetcode.com{}description/)\n\n'.format(question_info['questionDetailUrl']),
+            '[Question Discussion]({})'.format(question_info['discussUrl'])
+        ]
+    code_definition = get_code_definition(json.loads(question_info['codeDefinition']))
+    assert code_definition is not None
+    template['cells'][4]['source'] = [
+            code_definition
+        ]
+    func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_definition)
+    template['cells'][5]['source'] = [
+                's = Solution()\n',
+                's.{func}()'.format(func=func_match[1])
+        ]
+    
+    interval_start = (question_id-1) // 25 * 25 + 1
+    directory = "{}-{}".format(interval_start, interval_start+24)
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+
+    with open(os.path.join(directory, '{id}.{title}.ipynb'.format(id=question_id, title=question_info['questionTitleSlug'])), 'w+') as f:
+        json.dump(template, f, indent=2)
+
+
 def main(question_id):
     with requests.Session() as s:
         s.head('{domain}'.format(domain=LEETCODE))
@@ -78,6 +126,12 @@ def main(question_id):
         assert question_title_slug is not None
 
         question_info = get_question_info(s, question_title_slug)
+    
+    question_info = question_info['data']['question']
+    assert int(question_info['questionFrontendId']) == question_id
+    assert question_info['questionTitleSlug'] == question_title_slug
+
+    generate_notebook(question_id, question_info)
 
 
 if __name__ == '__main__':
