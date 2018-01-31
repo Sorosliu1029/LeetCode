@@ -19,6 +19,10 @@
             "nbconvert_exporter": "python",
             "pygments_lexer": "ipython3",
             "version": null
+        },
+        "leetcode_question_info": {
+            "submitUrl": null,
+            "sampleTestCase": null
         }
     },
     "cells": [
@@ -59,6 +63,15 @@
             "source": [
                 "s = Solution()\n",
                 "s.func()"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "submit()"
             ]
         }
     ]

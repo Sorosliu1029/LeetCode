@@ -39,7 +39,8 @@ def get_question_info(s, title_slug):
                     difficulty
                     discussUrl
                     topicTags
-                    codeDefinition                                        
+                    codeDefinition
+                    submitUrl                                      
                 }
             }"""
 
@@ -76,7 +77,11 @@ def get_code_definition(code_definitions, language='python3'):
 def generate_notebook(question_id, question_info):
     with open('notebook.template.json', 'rt') as f:
         template = json.load(f)
+
     template['metadata']['language_info']['version'] = "{}.{}.{}".format(*sys.version_info[:3])
+    template['metadata']['leetcode_question_info']['submitUrl'] = question_info['submitUrl']
+    template['metadata']['leetcode_question_info']['sampleTestCase'] = question_info['sampleTestCase']
+
     template['cells'][0]['source'] = ['### {frontend_id}. {title}'.format(frontend_id=question_info['questionFrontendId'], title=question_info['questionTitle'])]
     template['cells'][1]['source'] = [ '#### Content\n', question_info['content'] ]
     template['cells'][2]['source'] = [ '#### Sample Test Case\n', question_info['sampleTestCase'] ]
@@ -93,7 +98,7 @@ def generate_notebook(question_id, question_info):
     code_definition = get_code_definition(json.loads(question_info['codeDefinition']))
     assert code_definition is not None
     template['cells'][4]['source'] = [
-            code_definition
+            code_definition + 'pass'
         ]
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_definition)
     func_name = func_match[1]
@@ -104,6 +109,10 @@ def generate_notebook(question_id, question_info):
                 '{func} = timethis(s.{func})\n'.format(func=func_name),
                 '{func}()'.format(func=func_name)
         ]
+    template['cells'][6]['source'] = [
+        'from submitter import submit\n',
+        'submit({id})'.format(id=question_id)
+    ]
     
     interval_start = (question_id-1) // 25 * 25 + 1
     directory = "{}-{}".format(interval_start, interval_start+24)
