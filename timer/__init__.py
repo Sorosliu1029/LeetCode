@@ -1,1 +1,1 @@
-from .Timer import Timer, timethis
+from .Timer import timethis
