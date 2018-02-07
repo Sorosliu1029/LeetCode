@@ -14,8 +14,8 @@ def get_question_solution(notebook_cells):
 
 def login_leetcode(s):
     login_url = '{domain}accounts/login/'.format(domain=LEETCODE)
-    boundary = '------WebKitFormBoundaryLeetCode\r\n'
-    body_template = '{boundary}Content-Disposition: form-data; name="login"\r\n\r\n{login}\r\n{boundary}Content-Disposition: form-data; name="password"\r\n\r\n{password}\r\n{boundary}Content-Disposition: form-data; name="csrfmiddlewaretoken"\r\n\r\n{csrftoken}\r\n{boundary}'
+    boundary = '------WebKitFormBoundaryLeetCode'
+    body_template = '{boundary}\r\nContent-Disposition: form-data; name="login"\r\n\r\n{login}\r\n{boundary}\r\nContent-Disposition: form-data; name="password"\r\n\r\n{password}\r\n{boundary}\r\nContent-Disposition: form-data; name="csrfmiddlewaretoken"\r\n\r\n{csrftoken}\r\n{boundary}--\r\n'
     
     if not os.path.exists(os.path.join('..', 'myaccount.json')):
         raise RuntimeError('Must create "myaccount.json" file first.')
@@ -33,17 +33,20 @@ def login_leetcode(s):
     headers = {
         'Referer': login_url,
         'x-csrftoken': csrftoken,
-        'Content-Type': 'multipart/form-data; boundary={boundary}'.format(boundary=boundary.strip()),
+        'Content-Type': 'multipart/form-data; boundary={boundary}'.format(boundary=boundary[2:]),
         'Cache-Control': "no-cache"
     }
     body = body_template.format(boundary=boundary, login=login, password=password, csrftoken=csrftoken)
 
     resp = s.post(login_url, data=body, headers=headers)
-    if resp.ok:
+    cookies = dict(s.cookies)
+    success_msg = 'Successfully signed in as'
+    if resp.ok and 'LEETCODE_SESSION' in cookies and success_msg in cookies['messages']:
         return True
+    resp.raise_for_status()
 
 def submit_solution(s, submit_url, solution, question_id, sample_testcase):
-    full_submit_url = 'https://leetcode.com/{submit_url}'.format(submit_url=submit_url)
+    full_submit_url = 'https://leetcode.com{submit_url}'.format(submit_url=submit_url)
     csrftoken = s.cookies.get('csrftoken', domain='leetcode.com', path='/')
     assert csrftoken
 
@@ -70,7 +73,8 @@ def check_submission_result(s, submission_id):
     check_url = '{domain}submissions/detail/{submission_id}/check/'.format(domain=LEETCODE, submission_id=submission_id)
     resp = s.get(check_url)
     if resp.ok:
-        return resp.json
+        return resp.json()
+    resp.raise_for_status()
 
 def submit(question_id):
     files = list(filter(os.path.isfile, os.listdir()))
@@ -111,13 +115,13 @@ def submit(question_id):
                     return { 'ERROR': 'Check submission for too long time. Submission ID: {submission_id}'.format(submission_id=submission_id) }
                 submission_result = check_submission_result(s, submission_id)
 
-            return json.dumps(OrderedDict({
+            return OrderedDict({
                 'Result': submission_result['status_msg'],
                 'Input': submission_result['input_formatted'],
                 'Output': submission_result['code_output'],
                 'Expected': submission_result['expected_output'],
                 'Passed Test Case': '{passed} / {total}'.format(passed=submission_result['total_correct'], total=submission_result['total_testcases']),
                 'Run Time': submission_result['status_runtime']   
-            }))
+            })
         else:
             return { 'ERROR': 'Login LeetCode failed' }
