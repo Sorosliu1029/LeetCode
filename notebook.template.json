@@ -47,6 +47,16 @@
             "source": [ "difficulty", "- Topic tags", "question detail url", "discuss url"]
         },
         {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "---\n",
+                "What's your idea?\n",
+                "\n",
+                "---"
+            ]
+        },
+        {
             "cell_type": "code",
             "execution_count": null,
             "metadata": {},

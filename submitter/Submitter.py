@@ -115,13 +115,13 @@ def submit(question_id):
                     return { 'ERROR': 'Check submission for too long time. Submission ID: {submission_id}'.format(submission_id=submission_id) }
                 submission_result = check_submission_result(s, submission_id)
 
-            return OrderedDict({
-                'Result': submission_result['status_msg'],
-                'Input': submission_result['input_formatted'],
-                'Output': submission_result['code_output'],
-                'Expected': submission_result['expected_output'],
-                'Passed Test Case': '{passed} / {total}'.format(passed=submission_result['total_correct'], total=submission_result['total_testcases']),
-                'Run Time': submission_result['status_runtime']   
-            })
+            return {
+                '1.Result': submission_result['status_msg'],
+                '2.Input': submission_result['input_formatted'],
+                '3.Output': submission_result['code_output'],
+                '4.Expected': submission_result['expected_output'],
+                '5.Passed Test Case': '{passed} / {total}'.format(passed=submission_result['total_correct'], total=submission_result['total_testcases']),
+                '6.Run Time': submission_result['status_runtime']   
+            }
         else:
             return { 'ERROR': 'Login LeetCode failed' }

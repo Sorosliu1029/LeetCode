@@ -97,19 +97,19 @@ def generate_notebook(question_id, question_info):
         ]
     code_definition = get_code_definition(json.loads(question_info['codeDefinition']))
     assert code_definition is not None
-    template['cells'][4]['source'] = [
+    template['cells'][5]['source'] = [
             code_definition + 'pass'
         ]
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_definition)
     func_name = func_match[1]
-    template['cells'][5]['source'] = [
+    template['cells'][6]['source'] = [
                 "import sys, os; sys.path.append(os.path.abspath('..'))\n",
                 'from timer import timethis\n',
                 's = Solution()\n',
                 '{func} = timethis(s.{func})\n'.format(func=func_name),
                 '{func}()'.format(func=func_name)
         ]
-    template['cells'][6]['source'] = [
+    template['cells'][7]['source'] = [
         'from submitter import submit\n',
         'submit({id})'.format(id=question_id)
     ]
