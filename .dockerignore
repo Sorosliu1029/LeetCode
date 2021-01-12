@@ -1,0 +1,7 @@
+.git/
+.local/
+.cache/
+docs/
+
+.dockerignore
+Dockerfile
