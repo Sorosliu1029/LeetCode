@@ -2,9 +2,13 @@ import os
 import json
 import requests
 import time
-from collections import OrderedDict
+import datetime
+from IPython.display import Markdown, display
 
-LEETCODE = 'https://leetcode.com/'
+LEETCODE = 'https://leetcode.com'
+
+def printmd(string):
+    display(Markdown(string))
 
 def get_question_solution(notebook_cells):
     for cell in notebook_cells:
@@ -13,8 +17,9 @@ def get_question_solution(notebook_cells):
             return solution if not solution.endswith('pass') else None
 
 def login_leetcode(s):
-    login_url = '{domain}accounts/login/'.format(domain=LEETCODE)
+    login_url = '{domain}/accounts/login/'.format(domain=LEETCODE)
     boundary = '------WebKitFormBoundaryLeetCode'
+    # FIXME: LeetCode add Google recaptcha to enforce login, so auto login not working any more 😭️
     body_template = '{boundary}\r\nContent-Disposition: form-data; name="login"\r\n\r\n{login}\r\n{boundary}\r\nContent-Disposition: form-data; name="password"\r\n\r\n{password}\r\n{boundary}\r\nContent-Disposition: form-data; name="csrfmiddlewaretoken"\r\n\r\n{csrftoken}\r\n{boundary}--\r\n'
     
     if not os.path.exists(os.path.join('..', 'myaccount.json')):
@@ -45,6 +50,22 @@ def login_leetcode(s):
         return True
     resp.raise_for_status()
 
+"""
+instead of use `login_leetcode`, attach leetcode session directly
+"""
+def attach_leetcode_session(s):
+    if not os.path.exists(os.path.join('..', 'myaccount.json')):
+        raise RuntimeError('Must create "myaccount.json" file first.')
+
+    with open(os.path.join('..', 'myaccount.json'), 'rt') as f:
+        myaccount = json.load(f)
+    
+    leetcode_session = myaccount['leetcode_session']
+    assert leetcode_session
+
+    s.cookies.set('LEETCODE_SESSION', leetcode_session)
+    return True
+
 def submit_solution(s, submit_url, solution, question_id, sample_testcase):
     full_submit_url = 'https://leetcode.com{submit_url}'.format(submit_url=submit_url)
     csrftoken = s.cookies.get('csrftoken', domain='leetcode.com', path='/')
@@ -70,7 +91,7 @@ def submit_solution(s, submit_url, solution, question_id, sample_testcase):
     resp.raise_for_status()
 
 def check_submission_result(s, submission_id):
-    check_url = '{domain}submissions/detail/{submission_id}/check/'.format(domain=LEETCODE, submission_id=submission_id)
+    check_url = '{domain}/submissions/detail/{submission_id}/check/'.format(domain=LEETCODE, submission_id=submission_id)
     resp = s.get(check_url)
     if resp.ok:
         return resp.json()
@@ -100,28 +121,34 @@ def submit(question_id):
         return { 'ERROR': 'No sample test case' }
 
     with requests.Session() as s:
-        s.head('{domain}'.format(domain=LEETCODE))
-        if login_leetcode(s):
+        s.get('{domain}'.format(domain=LEETCODE))
+        # if login_leetcode(s):
+        if attach_leetcode_session(s):
             submission = submit_solution(s, submit_url, solution, question_id, sample_testcase)
             assert submission
             submission_id = submission['submission_id']
             time.sleep(1)
             submission_result = check_submission_result(s, submission_id)
             check_cnt = 0
-            while submission_result['state'] == 'STARTED':
+            while submission_result['state'] == 'PENDING' or submission_result['state'] == 'STARTED':
                 time.sleep(2)
                 check_cnt += 1
                 if check_cnt > 30:
                     return { 'ERROR': 'Check submission for too long time. Submission ID: {submission_id}'.format(submission_id=submission_id) }
                 submission_result = check_submission_result(s, submission_id)
 
-            return {
-                '1.Result': submission_result['status_msg'],
-                '2.Input': submission_result['input_formatted'],
-                '3.Output': submission_result['code_output'],
-                '4.Expected': submission_result['expected_output'],
-                '5.Passed Test Case': '{passed} / {total}'.format(passed=submission_result['total_correct'], total=submission_result['total_testcases']),
-                '6.Run Time': submission_result['status_runtime']   
-            }
+            printmd('😃 Result: {status_msg}\n\n📥 Input: `{input}`\n\n📤 Output: `{output}`\n\n✅ Expected: `{excepted}`\n\n💯 Passed Test Case: {passed} / {total}\n\n🚀 Runtime: {runtime}\n\n🉑 Runtime Percentile: {runtime_percentile}\n\n📆 Finished At: {finished_at}'
+                    .format(
+                        status_msg=submission_result['status_msg'],
+                        input=submission_result['input_formatted'],
+                        output=submission_result['code_output'],
+                        excepted=submission_result['expected_output'],
+                        passed=submission_result['total_correct'],
+                        total=submission_result['total_testcases'],
+                        runtime=submission_result['status_runtime'],
+                        runtime_percentile=submission_result['runtime_percentile'],
+                        finished_at=datetime.datetime.fromtimestamp(submission_result['task_finish_time'] / 1000).strftime("%Y-%m-%d")
+                    )
+            )
         else:
-            return { 'ERROR': 'Login LeetCode failed' }
+            printmd(' ⚠️ Login LeetCode failed')

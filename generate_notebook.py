@@ -133,19 +133,17 @@ def generate_notebook(question_id, question_info):
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_snippet)
     func_name = func_match[1]
     template['cells'][6]['source'] = [
-                "import sys, os; sys.path.append(os.path.abspath('..'))\n",
-                'from timer import timethis\n',
                 's = Solution()\n',
-                '{func} = timethis(s.{func})\n'.format(func=func_name),
-                '{func}()'.format(func=func_name)
+                's.{func}()'.format(func=func_name)
         ]
     template['cells'][7]['source'] = [
+        "import sys, os; sys.path.append(os.path.abspath('..'))\n",
         'from submitter import submit\n',
         'submit({id})'.format(id=question_id)
     ]
     
-    interval_start = (question_id-1) // 25 * 25 + 1
-    directory = "{}-{}".format(interval_start, interval_start+24)
+    interval_start = (question_id-1) // 50 * 50 + 1
+    directory = "{}-{}".format(interval_start, interval_start+49)
     if not os.path.exists(directory):
         os.mkdir(directory)
 
