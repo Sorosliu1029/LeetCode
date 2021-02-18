@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Use LeetCode's GraphQL API to generate question notebook
 """
@@ -8,10 +8,10 @@ import sys
 import os
 import re
 
-LEETCODE = 'https://leetcode.com/'
+LEETCODE = 'https://leetcode.com'
 
 def get_question_list(session):
-    resp = session.get('{domain}{url}'.format(domain=LEETCODE, url='api/problems/algorithms/'))
+    resp = session.get('{domain}{url}'.format(domain=LEETCODE, url='/api/problems/algorithms/'))
     if resp.ok:
         questions = resp.json()['stat_status_pairs']
         max_id = max((q['stat']['frontend_question_id'] for q in questions))
@@ -26,26 +26,53 @@ def get_question_info(s, title_slug):
     assert csrf_token is not None
 
     query = """
-        query getQuestionDetail($titleSlug: String!)
-            {
-                question(titleSlug: $titleSlug)
-                {
-                    questionFrontendId
-                    questionTitleSlug
-                    questionTitle
-                    content
-                    sampleTestCase
-                    questionDetailUrl
-                    difficulty
-                    discussUrl
-                    topicTags
-                    codeDefinition
-                    submitUrl                                      
-                }
-            }"""
+query questionData($titleSlug: String!) {
+    question(titleSlug: $titleSlug) {
+        questionId
+        questionFrontendId
+        submitUrl
+        questionDetailUrl
+        boundTopicId
+        title
+        titleSlug
+        content
+        isPaidOnly
+        difficulty
+        likes
+        dislikes
+        isLiked
+        similarQuestions
+        exampleTestcases
+        topicTags {
+            name
+            slug
+            translatedName
+            __typename
+        }
+        codeSnippets {
+            lang
+            langSlug
+            code
+            __typename
+        }
+        stats
+        hints
+        solution {
+            id
+            canSeeDetail
+            paidOnly
+            hasVideoSolution
+            paidOnlyVideo
+            __typename
+        }
+        status
+        sampleTestCase
+        __typename
+    }
+}"""
 
     graphql_query = {
-        "operationName": "getQuestionDetail",
+        "operationName": "questionData",
         "query": query,
         "variables": {
             "titleSlug": title_slug
@@ -54,25 +81,24 @@ def get_question_info(s, title_slug):
 
     headers = {
         'x-csrftoken': csrf_token,
-        'Referer': 'https://leetcode.com',
         'Content-Type': 'application/json',
         'Cache-Control': "no-cache"
     }
 
     resp = s.post(
-            '{domain}{url}'.format(domain=LEETCODE, url='graphql'),
+            '{domain}{url}'.format(domain=LEETCODE, url='/graphql'),
             json=graphql_query,
             headers=headers,
-       )
+    )
     
     if resp.ok:
         question_info = resp.json()
         return question_info
 
-def get_code_definition(code_definitions, language='python3'):
-    for code_definition in code_definitions:
-        if code_definition['value'] == language:
-            return code_definition['defaultCode']
+def get_code_snippet(code_snippets, language='python3'):
+    for code_snippet in code_snippets:
+        if code_snippet['langSlug'] == language:
+            return code_snippet['code']
     
 def generate_notebook(question_id, question_info):
     with open('notebook.template.json', 'rt') as f:
@@ -82,25 +108,29 @@ def generate_notebook(question_id, question_info):
     template['metadata']['leetcode_question_info']['submitUrl'] = question_info['submitUrl']
     template['metadata']['leetcode_question_info']['sampleTestCase'] = question_info['sampleTestCase']
 
-    template['cells'][0]['source'] = ['### {frontend_id}. {title}'.format(frontend_id=question_info['questionFrontendId'], title=question_info['questionTitle'])]
+    template['cells'][0]['source'] = ['### {frontend_id}. {title}'.format(frontend_id=question_info['questionFrontendId'], title=question_info['title'])]
     template['cells'][1]['source'] = [ '#### Content\n', question_info['content'] ]
-    template['cells'][2]['source'] = [ '#### Sample Test Case\n', question_info['sampleTestCase'] ]
-    template['cells'][3]['source'] = [
-            '#### Difficulty: {}\n\n'.format(question_info['difficulty']),
+    template['cells'][2]['source'] = [
+            '#### Difficulty: {}, AC rate: {}\n\n'.format(question_info['difficulty'], json.loads(question_info['stats'])['acRate']),
             '#### Question Tags:\n'
         ] + \
-        list(map(lambda t: '- {}\n'.format(t['name']), json.loads(question_info['topicTags']))) + \
+        list(map(lambda t: '- {}\n'.format(t['name']), question_info['topicTags'])) + \
         [
-            '\n',
-            '[Question Detail](https://leetcode.com{}description/)\n\n'.format(question_info['questionDetailUrl']),
-            '[Question Discussion]({})'.format(question_info['discussUrl'])
-        ]
-    code_definition = get_code_definition(json.loads(question_info['codeDefinition']))
-    assert code_definition is not None
+            '\n#### Links:\n',
+            ' 🎁 [Question Detail](https://leetcode.com{}description/)'.format(question_info['questionDetailUrl']) + \
+            ' | 🎉 [Question Solution](https://leetcode.com{}solution/)'.format(question_info['questionDetailUrl']) + \
+            ' | 💬 [Question Discussion](https://leetcode.com{}discuss/?orderBy=most_votes)\n'.format(question_info['questionDetailUrl']),
+            '\n#### Hints:\n'
+        ] + \
+        ['<details><summary>Hint {}</summary>{}</details>\n'.format(idx, hint) for idx, hint in enumerate(question_info['hints'])]
+    template['cells'][3]['source'] = [ '#### Sample Test Case\n', question_info['sampleTestCase'] ]
+    
+    code_snippet = get_code_snippet(question_info['codeSnippets'])
+    assert code_snippet is not None
     template['cells'][5]['source'] = [
-            code_definition + 'pass'
+            code_snippet + 'pass'
         ]
-    func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_definition)
+    func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_snippet)
     func_name = func_match[1]
     template['cells'][6]['source'] = [
                 "import sys, os; sys.path.append(os.path.abspath('..'))\n",
@@ -119,13 +149,13 @@ def generate_notebook(question_id, question_info):
     if not os.path.exists(directory):
         os.mkdir(directory)
 
-    with open(os.path.join(directory, '{id}.{title}.ipynb'.format(id=question_id, title=question_info['questionTitleSlug'])), 'w+') as f:
+    with open(os.path.join(directory, '{id}.{title}.ipynb'.format(id=question_id, title=question_info['titleSlug'])), 'w+') as f:
         json.dump(template, f, indent=2)
 
 
 def main(question_id):
     with requests.Session() as s:
-        s.head('{domain}'.format(domain=LEETCODE))
+        s.get('{domain}'.format(domain=LEETCODE))
 
         if os.path.exists('questions.json'):
             with open('questions.json', 'rt') as f:
@@ -141,8 +171,9 @@ def main(question_id):
         question_info = get_question_info(s, question_title_slug)
     
     question_info = question_info['data']['question']
+
     assert int(question_info['questionFrontendId']) == question_id
-    assert question_info['questionTitleSlug'] == question_title_slug
+    assert question_info['titleSlug'] == question_title_slug
 
     generate_notebook(question_id, question_info)
 
