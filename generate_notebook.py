@@ -122,7 +122,7 @@ def generate_notebook(question_id, question_info):
             ' | 💬 [Question Discussion](https://leetcode.com{}discuss/?orderBy=most_votes)\n'.format(question_info['questionDetailUrl']),
             '\n#### Hints:\n'
         ] + \
-        ['<details><summary>Hint {}</summary>{}</details>\n'.format(idx, hint) for idx, hint in enumerate(question_info['hints'])]
+        ['<details><summary>Hint {}  🔍</summary>{}</details>\n'.format(idx, hint) for idx, hint in enumerate(question_info['hints'])]
     template['cells'][3]['source'] = [ '#### Sample Test Case\n', question_info['sampleTestCase'] ]
     
     code_snippet = get_code_snippet(question_info['codeSnippets'])
