@@ -22,10 +22,10 @@ def login_leetcode(s):
     # FIXME: LeetCode add Google recaptcha to enforce login, so auto login not working any more 😭️
     body_template = '{boundary}\r\nContent-Disposition: form-data; name="login"\r\n\r\n{login}\r\n{boundary}\r\nContent-Disposition: form-data; name="password"\r\n\r\n{password}\r\n{boundary}\r\nContent-Disposition: form-data; name="csrfmiddlewaretoken"\r\n\r\n{csrftoken}\r\n{boundary}--\r\n'
     
-    if not os.path.exists(os.path.join('..', 'myaccount.json')):
-        raise RuntimeError('Must create "myaccount.json" file first.')
+    if not os.path.exists(os.path.join('..', 'account.json')):
+        raise RuntimeError('Must create "account.json" file first.')
     
-    with open(os.path.join('..', 'myaccount.json'), 'rt') as f:
+    with open(os.path.join('..', 'account.json'), 'rt') as f:
         myaccount = json.load(f)
 
     login = myaccount['login']
@@ -54,10 +54,10 @@ def login_leetcode(s):
 instead of use `login_leetcode`, attach leetcode session directly
 """
 def attach_leetcode_session(s):
-    if not os.path.exists(os.path.join('..', 'myaccount.json')):
-        raise RuntimeError('Must create "myaccount.json" file first.')
+    if not os.path.exists(os.path.join('..', 'account.json')):
+        raise RuntimeError('Must create "account.json" file first.')
 
-    with open(os.path.join('..', 'myaccount.json'), 'rt') as f:
+    with open(os.path.join('..', 'account.json'), 'rt') as f:
         myaccount = json.load(f)
     
     leetcode_session = myaccount['leetcode_session']
@@ -137,17 +137,21 @@ def submit(question_id):
                     return { 'ERROR': 'Check submission for too long time. Submission ID: {submission_id}'.format(submission_id=submission_id) }
                 submission_result = check_submission_result(s, submission_id)
 
-            printmd('😃 Result: {status_msg}\n\n📥 Input: `{input}`\n\n📤 Output: `{output}`\n\n✅ Expected: `{excepted}`\n\n💯 Passed Test Case: {passed} / {total}\n\n🚀 Runtime: {runtime}\n\n🉑 Runtime Percentile: {runtime_percentile}\n\n📆 Finished At: {finished_at}'
+#             print(submission_result)
+
+            printmd('😃 Result: {status_msg}\n\n📥 Input: `{input}`\n\n📤 Output: `{output}`\n\n✅ Expected: `{excepted}`\n\n💯 Passed Test Case: {passed} / {total}\n\n🚀 Runtime: {runtime}, Memory: {memory}\n\n🉑 Runtime Percentile: better than {runtime_percentile:.2f}%, Memory Percentile: better than {memory_percentile:.2f}%\n\n📆 Finished At: {finished_at}'
                     .format(
-                        status_msg=submission_result['status_msg'],
-                        input=submission_result['input_formatted'],
-                        output=submission_result['code_output'],
-                        excepted=submission_result['expected_output'],
-                        passed=submission_result['total_correct'],
-                        total=submission_result['total_testcases'],
-                        runtime=submission_result['status_runtime'],
-                        runtime_percentile=submission_result['runtime_percentile'],
-                        finished_at=datetime.datetime.fromtimestamp(submission_result['task_finish_time'] / 1000).strftime("%Y-%m-%d")
+                        status_msg=submission_result.get('status_msg', ''),
+                        input=submission_result.get('input_formatted', ''),
+                        output=submission_result.get('code_output', ''),
+                        excepted=submission_result.get('expected_output', ''),
+                        passed=submission_result.get('total_correct', ''),
+                        total=submission_result.get('total_testcases', ''),
+                        runtime=submission_result.get('status_runtime', ''),
+                        runtime_percentile=submission_result.get('runtime_percentile', ''),
+                        memory=submission_result.get('status_memory', ''),
+                        memory_percentile=submission_result.get('memory_percentile', ''),
+                        finished_at=datetime.datetime.fromtimestamp(submission_result.get('task_finish_time', 0) / 1000).strftime("%Y-%m-%d")
                     )
             )
         else:
