@@ -12,7 +12,7 @@ def printmd(string):
 
 def get_question_solution(notebook_cells):
     for cell in notebook_cells:
-        if cell['cell_type'] == 'code' and 'class Solution:' in ''.join(cell['source']):
+        if cell['cell_type'] == 'code' and ('class Solution:' in ''.join(cell['source']) or cell['metadata'].get('isSolutionCode')):
             solution = ''.join(cell['source']) 
             return solution if not solution.endswith('pass') else None
 

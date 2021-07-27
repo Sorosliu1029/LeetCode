@@ -131,11 +131,12 @@ def generate_notebook(question_id, question_info):
             code_snippet + 'pass'
         ]
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_snippet)
-    func_name = func_match[1]
-    template['cells'][6]['source'] = [
-                's = Solution()\n',
-                's.{func}()'.format(func=func_name)
-        ]
+    if func_match:
+        func_name = func_match[1]
+        template['cells'][6]['source'] = [
+                    's = Solution()\n',
+                    's.{func}()'.format(func=func_name)
+            ]
     template['cells'][7]['source'] = [
         "import sys, os; sys.path.append(os.path.abspath('..'))\n",
         'from submitter import submit\n',
