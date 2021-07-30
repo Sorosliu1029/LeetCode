@@ -130,6 +130,8 @@ def generate_notebook(question_id, question_info):
     template['cells'][5]['source'] = [
             code_snippet + 'pass'
         ]
+    template['cells'][5]['metadata']['isSolutionCode'] = true
+
     func_match = re.search(r'class Solution:\s+def (.*?)\(self,', code_snippet)
     if func_match:
         func_name = func_match[1]
