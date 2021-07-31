@@ -141,17 +141,17 @@ def submit(question_id):
 
             printmd('😃 Result: {status_msg}\n\n📥 Input: `{input}`\n\n📤 Output: `{output}`\n\n✅ Expected: `{excepted}`\n\n💯 Passed Test Case: {passed} / {total}\n\n🚀 Runtime: {runtime}, Memory: {memory}\n\n🉑 Runtime Percentile: better than {runtime_percentile:.2f}%, Memory Percentile: better than {memory_percentile:.2f}%\n\n📆 Finished At: {finished_at}'
                     .format(
-                        status_msg=submission_result.get('status_msg', ''),
-                        input=submission_result.get('input_formatted', ''),
-                        output=submission_result.get('code_output', ''),
-                        excepted=submission_result.get('expected_output', ''),
-                        passed=submission_result.get('total_correct', ''),
-                        total=submission_result.get('total_testcases', ''),
-                        runtime=submission_result.get('status_runtime', ''),
-                        runtime_percentile=submission_result.get('runtime_percentile', ''),
-                        memory=submission_result.get('status_memory', ''),
-                        memory_percentile=submission_result.get('memory_percentile', ''),
-                        finished_at=datetime.datetime.fromtimestamp(submission_result.get('task_finish_time', 0) / 1000).strftime("%Y-%m-%d")
+                        status_msg=submission_result.get('status_msg', '') or '',
+                        input=submission_result.get('input_formatted', '') or '',
+                        output=submission_result.get('code_output', '') or '',
+                        excepted=submission_result.get('expected_output', '') or '',
+                        passed=submission_result.get('total_correct', 0) or 0,
+                        total=submission_result.get('total_testcases', 0) or 0,
+                        runtime=submission_result.get('status_runtime', '') or '',
+                        runtime_percentile=submission_result.get('runtime_percentile', 0) or 0,
+                        memory=submission_result.get('status_memory', '') or '',
+                        memory_percentile=submission_result.get('memory_percentile', 0) or 0,
+                        finished_at=datetime.datetime.fromtimestamp((submission_result.get('task_finish_time', 0) or 0) / 1000).strftime("%Y-%m-%d")
                     )
             )
         else:
