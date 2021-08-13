@@ -11,8 +11,11 @@ def printmd(string):
     display(Markdown(string))
 
 def get_question_solution(notebook_cells):
+    is_solution = lambda c: c['cell_type'] == 'code' and c['metadata'].get('isSolutionCode')
+    assert sum(1 for _ in filter(is_solution, notebook_cells)) == 1
+    
     for cell in notebook_cells:
-        if cell['cell_type'] == 'code' and ('class Solution:' in ''.join(cell['source']) or cell['metadata'].get('isSolutionCode')):
+        if is_solution(cell):
             solution = ''.join(cell['source']) 
             return solution if not solution.endswith('pass') else None
 
