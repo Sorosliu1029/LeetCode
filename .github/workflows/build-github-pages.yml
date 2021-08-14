@@ -1,0 +1,16 @@
+name: Build GitHub Pages
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Build HTML pages
+        run: echo "<p>hello ${{ github.sha }}</p>" > docs/index.html
+      - name: Push new files back to pages.
+        uses: mikeal/publish-to-github-action@1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: 'pages'
+      - run: echo "🍏 This job's status is ${{ job.status }}."
