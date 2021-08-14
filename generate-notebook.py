@@ -7,6 +7,7 @@ import json
 import sys
 import os
 import re
+import time
 
 LEETCODE = 'https://leetcode.com'
 
@@ -158,13 +159,15 @@ def main(question_id):
     with requests.Session() as s:
         s.get('{domain}'.format(domain=LEETCODE))
 
-        if os.path.exists('questions.json'):
-            with open('questions.json', 'rt') as f:
-                question_list = json.load(f)
-        else:
+        question_file = 'questions.json'
+        if not os.path.exists(question_file) or ((time.time() - os.path.getmtime(question_file)) // (60*60*24*30)) > 3:
+            print('refresh questions.json')
             question_list = get_question_list(s)
             with open('questions.json', 'wt') as f:
                 json.dump(question_list, f)
+        else:
+            with open('questions.json', 'rt') as f:
+                question_list = json.load(f)
         
         question_title_slug = question_list[question_id]
         assert question_title_slug is not None

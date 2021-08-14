@@ -3,13 +3,16 @@
 Convert .ipynb to .html by nbconvert
 """
 import os
+import json
 from nbconvert import HTMLExporter
+from jinja2 import Environment, FileSystemLoader
 import re
 
 TEMPLATE_PATH = os.path.join('docs', 'templates')
 INDEX_HTML_PATH = os.path.join('docs', 'index.html')
+PROBLEMS_JSON = 'questions.json'
 
-INTERVAL = 50
+INTERVAL = 100
 
 def extract_problem_id(filename):
     return int(re.search(r'^(\d+)\.', filename).group(1))
@@ -60,15 +63,31 @@ def convert():
     return solved_problems
 
 
-def render_index(solved_problems):
-    # TODO: index.html
-    pass
+def render_index(all_problems, solved_problems):
+    solved_problem_ids = solved_problems.keys()
+    solved_count = len(solved_problem_ids)
+    total_count = sum(1 for _ in filter(lambda p: p, all_problems))
+
+    data = {
+        'solved_count': solved_count,
+        'total_count': total_count,
+        'progress_percentage': '{}'.format(solved_count * 100 // total_count),
+        'solved': set(solved_problem_ids),
+        'problems': all_problems
+    }
+
+    env = Environment(loader=FileSystemLoader(TEMPLATE_PATH))
+    readme_template = env.get_template('index.html.j2')
+    readme_template.stream(**data).dump(INDEX_HTML_PATH)
 
 
 def main():
+    with open(PROBLEMS_JSON, 'rt', encoding='utf-8') as f:
+        all_problems = json.load(f)
+
     solved_problems = convert()
     print('Convert to html done.')
-    render_index(solved_problems)
+    render_index(all_problems, solved_problems)
     print('Render index.html done.')
 
 

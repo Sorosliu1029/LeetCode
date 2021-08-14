@@ -8,7 +8,49 @@
 </head>
 
 <body>
-
+    <div id="progress_page">
+        <div id="main_section">
+            <div id="progress_bar_section">
+                <h3>Solved {{ solved_count }} out of {{ total_count }} problems</h3>
+                <div id="progress_bar_box" class="info">
+                    <div id="progress_bar" style="width:{{ progress_percentage }}%;background-color:#f93"></div>
+                    <span>Completed {{ progress_percentage }}% of the problems</span>
+                </div>
+            </div>
+            <div id="problems_solved_section">
+                <h3>Problems Solved</h3>
+                {%- for t in range(total_count // 100 + 1) -%}
+                <table class="grid problems_solved_table">
+                    {%- for r in range(5) -%}
+                    <tr>
+                        {%- for c in range(20) if t*100+r*20+c+1 <= total_count -%}
+                        <td class="{%- if (t*100+r*20+c+1) in solved -%}
+                                    problem_solved
+                                    {%- else -%}
+                                    problem_unsolved
+                                    {%- endif -%}">
+                            {%- if not problems[t*100+r*20+c+1] -%}
+                            <div style="color:gray" class="info"><del>{{ t*100+r*20+c+1 }}</del></div>
+                            {%- else -%}
+                            <a href="{%- if (t*100+r*20+c+1) in solved -%}
+                                {{ t*100+1 }}-{{ (t+1)*100 }}/{{ t*100+r*20+c+1 }}.{{ problems[t*100+r*20+c+1] }}.html
+                                {%- else -%}
+                                https://leetcode.com/problems/{{ problems[t*100+r*20+c+1] }}/
+                                {%- endif -%}" style="color:inherit;" target="_blank">
+                                <div style="" class="info">{{ t*100+r*20+c+1 }}
+                                    <span>&quot;{{ problems[t*100+r*20+c+1] }}&quot;</span>
+                                </div>
+                            </a>
+                            {%- endif -%}
+                        </td>
+                        {%- endfor -%}
+                    </tr>
+                    {%- endfor -%}
+                </table>
+                {%- endfor -%}
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
