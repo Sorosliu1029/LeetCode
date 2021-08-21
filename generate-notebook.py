@@ -108,6 +108,8 @@ def generate_notebook(question_id, question_info):
     template['metadata']['language_info']['version'] = "{}.{}.{}".format(*sys.version_info[:3])
     template['metadata']['leetcode_question_info']['submitUrl'] = question_info['submitUrl']
     template['metadata']['leetcode_question_info']['sampleTestCase'] = question_info['sampleTestCase']
+    template['metadata']['leetcode_question_info']['questionId'] = question_info['questionId']
+    template['metadata']['leetcode_question_info']['questionFrontendId'] = question_info['questionFrontendId']
 
     template['cells'][0]['source'] = ['### {frontend_id}. {title}'.format(frontend_id=question_info['questionFrontendId'], title=question_info['title'])]
     template['cells'][1]['source'] = [ '#### Content\n', question_info['content'] ]

@@ -69,7 +69,7 @@ def attach_leetcode_session(s):
     s.cookies.set('LEETCODE_SESSION', leetcode_session)
     return True
 
-def submit_solution(s, submit_url, solution, question_id, sample_testcase):
+def submit_solution(s, submit_url, solution, question_submit_id, sample_testcase):
     full_submit_url = 'https://leetcode.com{submit_url}'.format(submit_url=submit_url)
     csrftoken = s.cookies.get('csrftoken', domain='leetcode.com', path='/')
     assert csrftoken
@@ -80,7 +80,7 @@ def submit_solution(s, submit_url, solution, question_id, sample_testcase):
         'Content-Type': 'application/json'
     }
     submission = {
-        'question_id': str(question_id),
+        'question_id': str(question_submit_id),
         'data_input': sample_testcase,
         'lang': 'python3',
         'typed_code': solution,
@@ -112,9 +112,13 @@ def submit(question_id):
     with open(notebook_file, 'rt') as f:
         notebook = json.load(f)
     
+    question_frontend_id = notebook['metadata']['leetcode_question_info']['questionFrontendId']
+    assert question_id == int(question_frontend_id)
+
     solution = get_question_solution(notebook['cells'])
     submit_url = notebook['metadata']['leetcode_question_info']['submitUrl']
     sample_testcase = notebook['metadata']['leetcode_question_info']['sampleTestCase']
+    question_submit_id = notebook['metadata']['leetcode_question_info']['questionId']
 
     if not solution:
         return { 'ERROR': 'No solution or solution is empty' }
@@ -127,7 +131,7 @@ def submit(question_id):
         s.get('{domain}'.format(domain=LEETCODE))
         # if login_leetcode(s):
         if attach_leetcode_session(s):
-            submission = submit_solution(s, submit_url, solution, question_id, sample_testcase)
+            submission = submit_solution(s, submit_url, solution, question_submit_id, sample_testcase)
             assert submission
             submission_id = submission['submission_id']
             time.sleep(1)
