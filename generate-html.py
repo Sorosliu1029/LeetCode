@@ -14,6 +14,7 @@ PROBLEMS_JSON = 'questions.json'
 
 INTERVAL = 100
 
+
 def extract_problem_id(filename):
     return int(re.search(r'^(\d+)\.', filename).group(1))
 
@@ -66,12 +67,13 @@ def convert():
 def render_index(all_problems, solved_problems):
     solved_problem_ids = solved_problems.keys()
     solved_count = len(solved_problem_ids)
-    total_count = sum(1 for _ in filter(lambda p: p, all_problems))
+    total_valid_count = sum(1 for _ in filter(lambda p: p, all_problems))
 
     data = {
         'solved_count': solved_count,
-        'total_count': total_count,
-        'progress_percentage': '{}'.format(solved_count * 100 // total_count),
+        'total_count': len(all_problems),
+        'total_valid_count': total_valid_count,
+        'progress_percentage': '{}'.format(solved_count * 100 // total_valid_count),
         'solved': set(solved_problem_ids),
         'problems': all_problems
     }
