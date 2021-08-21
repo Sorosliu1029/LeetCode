@@ -11,3 +11,10 @@ def array_to_list(array):
         p = p.next
     
     return dummy.next
+
+def print_list(l):
+    print('[', end='')
+    while l:
+        print(l.val, ', ', end='', sep='')
+        l = l.next
+    print(']')
