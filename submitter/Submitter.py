@@ -101,10 +101,15 @@ def check_submission_result(s, submission_id):
     resp.raise_for_status()
 
 def submit(question_id):
-    files = list(filter(os.path.isfile, os.listdir()))
-    for f in files:
+    interval_start = (question_id-1) // 50 * 50 + 1
+    directory = "{}-{}".format(interval_start, interval_start+49)
+    base_dir = os.getcwd()
+    if directory not in base_dir:
+        base_dir = os.path.join(base_dir, directory)
+
+    for f in os.listdir(base_dir):
         if f.startswith('{id}.'.format(id=question_id)) and f.endswith('.ipynb'):
-            notebook_file = f
+            notebook_file = os.path.join(base_dir, f)
             break
     else:
         return { 'ERROR': 'Notebook not found for id: {id}'.format(id=question_id) }
