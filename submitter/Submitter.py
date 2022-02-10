@@ -56,11 +56,12 @@ def login_leetcode(s):
 """
 instead of use `login_leetcode`, attach leetcode session directly
 """
-def attach_leetcode_session(s):
-    if not os.path.exists(os.path.join('..', 'account.json')):
+def attach_leetcode_session(base_dir, s):
+    account_file_path = os.path.join(base_dir, '..', 'account.json')
+    if not os.path.exists(account_file_path):
         raise RuntimeError('Must create "account.json" file first.')
 
-    with open(os.path.join('..', 'account.json'), 'rt') as f:
+    with open(account_file_path, 'rt') as f:
         myaccount = json.load(f)
     
     leetcode_session = myaccount['leetcode_session']
@@ -135,7 +136,7 @@ def submit(question_id):
     with requests.Session() as s:
         s.get('{domain}'.format(domain=LEETCODE))
         # if login_leetcode(s):
-        if attach_leetcode_session(s):
+        if attach_leetcode_session(base_dir, s):
             submission = submit_solution(s, submit_url, solution, question_submit_id, sample_testcase)
             assert submission
             submission_id = submission['submission_id']
