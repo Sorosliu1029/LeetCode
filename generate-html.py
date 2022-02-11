@@ -24,6 +24,8 @@ class Converter(object):
         self.html_exporter = HTMLExporter()
         self.html_exporter.template_path = [os.path.join('docs', 'templates')]
         self.html_exporter.template_file = 'full'
+        self.html_exporter.exclude_input_prompt = True
+        self.html_exporter.exclude_output_prompt = True
 
     def convert(self, ipynb_path):
         return self.html_exporter.from_filename(ipynb_path)
