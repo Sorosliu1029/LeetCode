@@ -52,7 +52,7 @@ def convert():
 
     for dirpath, _, filenames in os.walk('.'):
         if re.search(r'(\d+)-(\d+)$', dirpath):
-            for filename in filter(lambda f: f.endswith('.ipynb'), filenames):
+            for filename in filter(lambda f: f.endswith('.ipynb') and not f.endswith('__no-ac.ipynb'), filenames):
                 source_ipynb_path = os.path.join(dirpath, filename)
                 problem_id = extract_problem_id(filename)
                 solved_problems[problem_id] = {
