@@ -130,6 +130,13 @@ def generate_notebook(question_id, question_info):
     
     code_snippet = get_code_snippet(question_info['codeSnippets'])
     assert code_snippet is not None
+
+    pre_solution_index = code_snippet.find('class Solution:')
+    pre_solution = None
+    if pre_solution_index > 0:
+        pre_solution = code_snippet[:pre_solution_index]
+        code_snippet = code_snippet[pre_solution_index:]
+
     template['cells'][5]['source'] = [
             code_snippet + 'pass'
         ]
@@ -147,6 +154,15 @@ def generate_notebook(question_id, question_info):
         'from submitter import submit\n',
         'submit({id})'.format(id=question_id)
     ]
+
+    if pre_solution:
+        template['cells'].insert(5, {
+            'cell_type': 'code',
+            'execution_count': None,
+            'metadata': {},
+            'outputs': [],
+            'source': [pre_solution]
+        })
     
     interval_start = (question_id-1) // 50 * 50 + 1
     directory = "{}-{}".format(interval_start, interval_start+49)
