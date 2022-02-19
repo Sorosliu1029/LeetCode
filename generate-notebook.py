@@ -161,7 +161,7 @@ def generate_notebook(question_id, question_info):
             'execution_count': None,
             'metadata': {},
             'outputs': [],
-            'source': [pre_solution]
+            'source': [pre_solution.strip(' \n')]
         })
     
     interval_start = (question_id-1) // 50 * 50 + 1
