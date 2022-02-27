@@ -1,1 +1,1 @@
-from .Visualizer import visualize_binary_tree
+from .Visualizer import visualize_binary_tree, visualize_directed_graph

@@ -41,3 +41,21 @@ def visualize_binary_tree(tree):
 
     # Visualize the graph
     display(dot)
+
+def visualize_directed_graph(node):
+    visited = {}
+    level = [node]
+    dot = Digraph(node_attr={'shape': 'circle'})
+    dot.attr(layout='neato', overlap='false')
+    while any(id(n) not in visited for n in level):
+        next_level = []
+        for n in level:
+            if id(n) not in visited:
+                dot.node(name=hex(id(n)), label=str(n.val))
+                visited[id(n)] = n
+            next_level += n.neighbors
+        level = next_level
+    for n in visited.values():
+        for neighbor in n.neighbors:
+            dot.edge(hex(id(n)), hex(id(neighbor)))
+    display(dot)
