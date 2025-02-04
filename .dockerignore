@@ -2,6 +2,8 @@
 .local/
 .cache/
 docs/
+.github/
 
+*.ipynb
 .dockerignore
 Dockerfile

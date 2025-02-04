@@ -4,8 +4,7 @@ import requests
 import time
 import datetime
 from IPython.display import Markdown, display
-
-LEETCODE = 'https://leetcode.com'
+from ..generator import LEETCODE, get_folder_for
 
 def printmd(string):
     display(Markdown(string))
@@ -71,7 +70,7 @@ def attach_leetcode_session(base_dir, s):
     return True
 
 def submit_solution(s, submit_url, solution, question_submit_id, sample_testcase):
-    full_submit_url = 'https://leetcode.com{submit_url}'.format(submit_url=submit_url)
+    full_submit_url = LEETCODE + submit_url
     csrftoken = s.cookies.get('csrftoken', domain='leetcode.com', path='/')
     assert csrftoken
 
@@ -102,8 +101,7 @@ def check_submission_result(s, submission_id):
     resp.raise_for_status()
 
 def submit(question_id):
-    interval_start = (question_id-1) // 50 * 50 + 1
-    directory = "{}-{}".format(interval_start, interval_start+49)
+    directory = get_folder_for(question_id, 50)
     base_dir = os.getcwd()
     if directory not in base_dir:
         base_dir = os.path.join(base_dir, directory)

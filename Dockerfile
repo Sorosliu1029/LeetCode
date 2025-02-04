@@ -1,6 +1,7 @@
-FROM jupyter/base-notebook:python-3.8.6
+# https://jupyter-docker-stacks.readthedocs.io/en/latest/using/recipes.html#using-mamba-install-recommended-or-pip-install-in-a-child-docker-image
+FROM quay.io/jupyter/base-notebook:latest
 LABEL author="Soros Liu"
-RUN conda install --yes 'python-graphviz=0.17' && \
-    conda clean --all -f -y && \
+RUN mamba install --yes 'python-graphviz' && \
+    mamba clean --all -f -y && \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
