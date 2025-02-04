@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import json
-from .generator import PROBLEMS_JSON, convert_notebook_to_html, render_index_html
+from generator import PROBLEMS_JSON, convert_notebook_to_html, render_index_html
 
 
 if __name__ == "__main__":
