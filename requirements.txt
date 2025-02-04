@@ -1,2 +1,2 @@
-nbconvert==5.6.1
-ipython==7.26.0
+nbconvert==7.16.6
+ipython==8.32.0
