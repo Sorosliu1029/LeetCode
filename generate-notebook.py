@@ -10,7 +10,14 @@ import sys
 import os
 import re
 import time
-from helper import get_folder_for, LEETCODE, NOTEBOOK_TEMPLATE_JSON, PROBLEMS_JSON
+import random
+from helper import (
+    get_folder_for,
+    patch_csrf_token,
+    LEETCODE,
+    NOTEBOOK_TEMPLATE_JSON,
+    PROBLEMS_JSON,
+)
 
 
 def get_question_list(session):
@@ -220,7 +227,7 @@ def generate(question_id, question_info):
 
 def generate_notebook(question_id):
     with requests.Session() as s:
-        s.get(LEETCODE + "/api/")
+        patch_csrf_token(s)
 
         if (
             not os.path.exists(PROBLEMS_JSON)

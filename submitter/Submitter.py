@@ -4,7 +4,7 @@ import requests
 import time
 import datetime
 from IPython.display import Markdown, display
-from ..generator import LEETCODE, get_folder_for
+from helper import LEETCODE, get_folder_for, patch_csrf_token
 
 def printmd(string):
     display(Markdown(string))
@@ -132,7 +132,7 @@ def submit(question_id):
         return { 'ERROR': 'No sample test case' }
 
     with requests.Session() as s:
-        s.get('{domain}'.format(domain=LEETCODE))
+        patch_csrf_token(s)
         # if login_leetcode(s):
         if attach_leetcode_session(base_dir, s):
             submission = submit_solution(s, submit_url, solution, question_submit_id, sample_testcase)
