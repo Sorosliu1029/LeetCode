@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Convert .ipynb to .html by nbconvert
 """
