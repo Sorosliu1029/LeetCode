@@ -1,7 +1,7 @@
 import os
 
 LEETCODE = "https://leetcode.com"
-TEMPLATE_PATH = os.path.join("docs", "templates")
+TEMPLATE_DIR = "docs"
 INDEX_HTML_PATH = os.path.join("docs", "index.html")
 PROBLEMS_JSON = "questions.json"
 NOTEBOOK_TEMPLATE_JSON = "notebook.template.json"

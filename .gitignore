@@ -6,3 +6,4 @@
 *.pyc
 .ipynb_checkpoints/
 account.json
+docs/*-*/
