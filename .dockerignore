@@ -1,9 +1,20 @@
-.git/
-.local/
 .cache/
-docs/
+.git/
 .github/
+.ipynb_checkpoints/
+.ipython/
+.jupyter/
+.local/
+.vscode/
+__pycache__/
+docs/
 
 *.ipynb
 .dockerignore
 Dockerfile
+.bash_history
+.gitignore
+account.json
+LICENSE
+README.md
+
