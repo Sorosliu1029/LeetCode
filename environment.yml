@@ -1,0 +1,8 @@
+name: leetcode
+channels:
+  - conda-forge
+dependencies:
+  - python=3
+  - jupyterlab >=4.3.0
+  - jupyterlab_vim
+  # - jupyterlab_leetcode, install by pip
