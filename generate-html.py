@@ -40,12 +40,14 @@ def get_all_problems():
     )
     response.raise_for_status()
     data = response.json()
-    all_problems = data["data"]["allQuestions"]
-    max_id = max(int(p["questionFrontendId"]) for p in all_problems)
+    all_problems = [
+        (q["questionFrontendId"], q["titleSlug"]) for q in data["data"]["allQuestions"]
+    ]
+    filtered_all_problems = [p for p in all_problems if p[0] < 10000]
+    max_id = max(p[0] for p in filtered_all_problems)
     problems = [None] * (max_id + 1)
-    for p in all_problems:
-        pid = int(p["questionFrontendId"])
-        problems[pid] = p["titleSlug"]
+    for p in filtered_all_problems:
+        problems[p[0]] = p[1]
     return problems
 
 
@@ -139,4 +141,6 @@ if __name__ == "__main__":
 
         all_problems = get_all_problems()
         render_index(all_problems, solved_problems)
-        print(f"Render index.html done. {len(solved_problems)} problems solved.")
+        print(
+            f"Render index.html done. Solved {len(solved_problems)} problems out of {len(all_problems)-1}."
+        )
