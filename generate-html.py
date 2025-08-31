@@ -139,7 +139,12 @@ if __name__ == "__main__":
         solved_problems = convert(0)
         print("Convert to html done.")
 
-        all_problems = get_all_problems()
+        try:
+            all_problems = get_all_problems()
+        except Exception as e:
+            print("Failed to get all problems from LeetCode:", e)
+            sys.exit(1)
+
         render_index(all_problems, solved_problems)
         print(
             f"Render index.html done. Solved {len(solved_problems)} problems out of {len(all_problems)-1}."
