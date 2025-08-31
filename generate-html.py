@@ -23,7 +23,9 @@ def get_folder_for(question_id, interval):
 
 
 def extract_problem_id(filename):
-    return int(re.search(r"^(\d+)\.", filename).group(1))
+    m = re.search(r"^(\d+)\.", filename)
+    assert m is not None, "Cannot extract problem id from filename: {}".format(filename)
+    return int(m.group(1))
 
 
 class Converter(object):
@@ -54,13 +56,13 @@ def convert(problem_id):
     suffix_filter = lambda f: f.endswith(".ipynb") and not f.endswith("__no-ac.ipynb")
 
     if problem_id:
-        direcotry = get_folder_for(problem_id, 50)
-        for _, _, filenames in os.walk(direcotry):
+        directory = get_folder_for(problem_id, 50)
+        for _, _, filenames in os.walk(directory):
             for filename in filter(
                 lambda f: f.startswith("{}.".format(problem_id)) and suffix_filter(f),
                 filenames,
             ):
-                solved_problems[problem_id] = os.path.join(direcotry, filename)
+                solved_problems[problem_id] = os.path.join(directory, filename)
     else:
         for dirpath, _, filenames in os.walk("."):
             if re.search(r"(\d+)-(\d+)$", dirpath):
@@ -117,4 +119,4 @@ if __name__ == "__main__":
         with open(PROBLEMS_JSON, "rt", encoding="utf-8") as f:
             all_problems = json.load(f)
         render_index(all_problems, solved_problems)
-        print("Render index.html done.")
+        print(f"Render index.html done. {len(solved_problems)} problems solved.")
