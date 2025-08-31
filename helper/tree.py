@@ -40,9 +40,49 @@ def array_to_binary_tree(array: list[Any]):
 
 
 if __name__ == "__main__":
-    # test array_to_binary_tree
-    actual1 = TreeNode(1, left=TreeNode(2), right=TreeNode(3))
-    built1 = array_to_binary_tree([1, 2, 3])
-    assert actual1 == built1, "array_to_binary_tree incorrect"
+    import unittest
 
-    # TODO: move test cases
+    class TestCase(unittest.TestCase):
+        def test_array_to_binary_tree_simple(self):
+            actual = TreeNode(1, left=TreeNode(2), right=TreeNode(3))
+            built = array_to_binary_tree([1, 2, 3])
+            self.assertEqual(actual, built, "array_to_binary_tree incorrect")
+
+        def test_array_to_binary_tree_simple2(self):
+            actual = TreeNode(1, left=TreeNode(3), right=TreeNode(2))
+            built = array_to_binary_tree([1, 3, 2])
+            self.assertEqual(actual, built, "array_to_binary_tree incorrect")
+
+        def test_array_to_binary_tree_complex(self):
+            actual = TreeNode(
+                3,
+                left=TreeNode(
+                    5,
+                    left=TreeNode(6),
+                    right=TreeNode(2, left=TreeNode(7), right=TreeNode(4)),
+                ),
+                right=TreeNode(1, left=TreeNode(9), right=TreeNode(8)),
+            )
+            built = array_to_binary_tree([3, 5, 1, 6, 2, 9, 8, None, None, 7, 4])
+            self.assertEqual(actual, built, "array_to_binary_tree incorrect")
+
+        def test_array_to_binary_tree_complex2(self):
+            actual = TreeNode(
+                3,
+                left=TreeNode(
+                    5,
+                    left=TreeNode(6),
+                    right=TreeNode(7),
+                ),
+                right=TreeNode(
+                    1,
+                    left=TreeNode(4),
+                    right=TreeNode(2, left=TreeNode(9), right=TreeNode(8)),
+                ),
+            )
+            built = array_to_binary_tree(
+                [3, 5, 1, 6, 7, 4, 2, None, None, None, None, None, None, 9, 8]
+            )
+            self.assertEqual(actual, built, "array_to_binary_tree incorrect")
+
+    unittest.main()
