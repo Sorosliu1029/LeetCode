@@ -118,7 +118,7 @@ def render_index(all_problems, solved_problems):
 
     data = {
         "solved_count": solved_count,
-        "total_count": len(all_problems),
+        "total_count": len(all_problems)-1,
         "total_valid_count": total_valid_count,
         "progress_percentage": "{}".format(solved_count * 100 // total_valid_count),
         "solved": set(solved_problem_ids),
