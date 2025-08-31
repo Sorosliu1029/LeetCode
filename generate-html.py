@@ -41,7 +41,7 @@ def get_all_problems():
     response.raise_for_status()
     data = response.json()
     all_problems = [
-        (q["questionFrontendId"], q["titleSlug"]) for q in data["data"]["allQuestions"]
+        (int(q["questionFrontendId"]), q["titleSlug"]) for q in data["data"]["allQuestions"]
     ]
     filtered_all_problems = [p for p in all_problems if p[0] < 10000]
     max_id = max(p[0] for p in filtered_all_problems)
