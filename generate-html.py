@@ -9,12 +9,12 @@ import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
+import requests
 from jinja2 import Environment, FileSystemLoader
 from nbconvert import HTMLExporter
 
 TEMPLATE_DIR = "docs"
 INDEX_HTML_PATH = os.path.join("docs", "index.html")
-PROBLEMS_JSON = "questions.json"
 
 
 def get_folder_for(question_id, interval):
@@ -26,6 +26,27 @@ def extract_problem_id(filename):
     m = re.search(r"^(\d+)\.", filename)
     assert m is not None, "Cannot extract problem id from filename: {}".format(filename)
     return int(m.group(1))
+
+
+def get_all_problems():
+    response = requests.post(
+        url="https://leetcode.com/graphql",
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(
+            {
+                "query": "query allQuestions { allQuestions { titleSlug questionFrontendId } }"
+            }
+        ),
+    )
+    response.raise_for_status()
+    data = response.json()
+    all_problems = data["data"]["allQuestions"]
+    max_id = max(int(p["questionFrontendId"]) for p in all_problems)
+    problems = [None] * (max_id + 1)
+    for p in all_problems:
+        pid = int(p["questionFrontendId"])
+        problems[pid] = p["titleSlug"]
+    return problems
 
 
 class Converter(object):
@@ -116,7 +137,6 @@ if __name__ == "__main__":
         solved_problems = convert(0)
         print("Convert to html done.")
 
-        with open(PROBLEMS_JSON, "rt", encoding="utf-8") as f:
-            all_problems = json.load(f)
+        all_problems = get_all_problems()
         render_index(all_problems, solved_problems)
         print(f"Render index.html done. {len(solved_problems)} problems solved.")
