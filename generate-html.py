@@ -4,13 +4,22 @@ Convert .ipynb to .html by nbconvert
 
 import json
 import os
-from nbconvert import HTMLExporter
 import re
 import sys
-from jinja2 import Environment, FileSystemLoader
-from concurrent.futures import ThreadPoolExecutor
 import threading
-from helper import get_folder_for, TEMPLATE_DIR, INDEX_HTML_PATH, PROBLEMS_JSON
+from concurrent.futures import ThreadPoolExecutor
+
+from jinja2 import Environment, FileSystemLoader
+from nbconvert import HTMLExporter
+
+TEMPLATE_DIR = "docs"
+INDEX_HTML_PATH = os.path.join("docs", "index.html")
+PROBLEMS_JSON = "questions.json"
+
+
+def get_folder_for(question_id, interval):
+    interval_start = (question_id - 1) // interval * interval + 1
+    return "{}-{}".format(interval_start, interval_start + interval - 1)
 
 
 def extract_problem_id(filename):
