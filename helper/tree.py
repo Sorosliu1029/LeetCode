@@ -31,7 +31,7 @@ def array_to_binary_tree(array: list[Any]):
     if l == 0:
         return None
 
-    nodes = [TreeNode(e) if e else None for e in array]
+    nodes = [TreeNode(e) if e is not None else None for e in array]
     for i, n in enumerate(filter(None, nodes), start=1):
         n.left = nodes[2 * i - 1] if (2 * i - 1) < l else None
         n.right = nodes[2 * i] if (2 * i) < l else None
@@ -83,6 +83,15 @@ if __name__ == "__main__":
             built = array_to_binary_tree(
                 [3, 5, 1, 6, 7, 4, 2, None, None, None, None, None, None, 9, 8]
             )
+            self.assertEqual(actual, built, "array_to_binary_tree incorrect")
+
+        def test_array_to_binary_tree_with_0_as_node(self):
+            actual = TreeNode(
+                1,
+                left=TreeNode(0, left=TreeNode(0), right=TreeNode(1)),
+                right=TreeNode(1, left=TreeNode(0), right=TreeNode(1)),
+            )
+            built = array_to_binary_tree([1, 0, 1, 0, 1, 0, 1])
             self.assertEqual(actual, built, "array_to_binary_tree incorrect")
 
     unittest.main()
