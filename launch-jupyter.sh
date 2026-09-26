@@ -10,6 +10,6 @@ echo "Setting PYTHONPATH..."
 export PYTHONPATH="$(pwd):$PYTHONPATH"
 
 echo "Launching Jupyter Lab..."
-jupyter lab
+jupyter lab --LabApp.extension_manager="readonly"
 
 echo "Done"
