@@ -139,11 +139,14 @@ def render_result(source):
         ("Runtime", html.escape(fields.get("Runtime", "")) + beats("Runtime Percentile")),
         ("Memory", html.escape(fields.get("Memory", "")) + beats("Memory Percentile")),
     ]
-    stats += [(label, "<code>{}</code>".format(html.escape(fields[label]))) for label in ("Input", "Output", "Expected") if label in fields]
     stats.append(("Finished", html.escape(finished_date())))
+    # failing cases can be huge, so they get full-width rows below the stats
+    cases = [(label, "<code>{}</code>".format(html.escape(fields[label]))) for label in ("Input", "Output", "Expected") if label in fields]
     status = "accepted" if fields.get("Result") == "Accepted" else "rejected"
-    return '<dl class="result {}">{}</dl>'.format(
-        status, "".join("<div><dt>{}</dt><dd>{}</dd></div>".format(k, v) for k, v in stats if v)
+    return '<dl class="result {}">{}{}</dl>'.format(
+        status,
+        "".join("<div><dt>{}</dt><dd>{}</dd></div>".format(k, v) for k, v in stats if v),
+        "".join('<div class="case"><dt>{}</dt><dd>{}</dd></div>'.format(k, v) for k, v in cases),
     )
 
 

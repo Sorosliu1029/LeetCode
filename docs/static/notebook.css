@@ -107,6 +107,9 @@ a:hover { text-decoration-color: currentColor; }
 .jp-Cell { margin: 0 0 20px; }
 .jp-Collapser, .jp-InputPrompt, .jp-OutputPrompt { display: none; }
 
+/* long formulas scroll inside their cell instead of widening the page */
+.jp-RenderedMarkdown { overflow-x: auto; }
+
 .jp-RenderedMarkdown > :first-child { margin-top: 0; }
 .jp-RenderedMarkdown > :last-child { margin-bottom: 0; }
 
@@ -204,6 +207,7 @@ a:hover { text-decoration-color: currentColor; }
     padding: 1px 5px;
     border-radius: 4px;
     background: var(--cell);
+    overflow-wrap: anywhere;
 }
 
 .jp-RenderedMarkdown pre {
@@ -277,7 +281,9 @@ a:hover { text-decoration-color: currentColor; }
     vertical-align: top;
 }
 
-.jp-RenderedSVG svg { display: block; max-width: 100%; height: auto; }
+.jp-OutputArea-child { max-width: 100%; }
+.jp-RenderedSVG { max-width: 100%; }
+.jp-RenderedSVG svg, .jp-RenderedSVG img { display: block; max-width: 100%; height: auto; }
 
 .jp-RenderedImage img { max-width: 100%; }
 
@@ -301,6 +307,10 @@ a:hover { text-decoration-color: currentColor; }
 .result dt { font: 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .result dd { margin: 4px 0 0; font-variant-numeric: tabular-nums; font-size: 15px; }
 .result dd small { display: block; font: 12px var(--mono); color: var(--muted); }
+.result > div.case { grid-column: 1 / -1; border-right: 0; border-top: 1px solid var(--rule); margin-right: 0; }
+.result .case dd { max-height: 9.6em; overflow: auto; }
+.result .case code { font: 12.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; background: none; padding: 0; }
+.result > div:not(.case):has(+ .case), .result > div:not(.case):last-child { border-right: 0; }
 .result.accepted > div:first-child dd { color: var(--easy); font-weight: 600; }
 .result.rejected > div:first-child dd { color: var(--hard); font-weight: 600; }
 
