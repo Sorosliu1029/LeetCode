@@ -1,0 +1,6 @@
+# Local Jupyter environment; requirements.txt alone is what CI needs to build the pages
+-r requirements.txt
+jupyterlab>=4.3.0,<5
+jupyterlab_vim
+# Local checkout of the extension, installed in editable mode
+-e ../jupyterlab-leetcode

@@ -3,8 +3,8 @@
 # run in current shell
 # `source ./launch-jupyter.sh`
 
-echo "Activating conda environment 'leetcode'..."
-conda activate leetcode
+echo "Activating uv virtual environment '.venv'..."
+source .venv/bin/activate
 
 echo "Setting PYTHONPATH..."
 export PYTHONPATH="$(pwd):$PYTHONPATH"
