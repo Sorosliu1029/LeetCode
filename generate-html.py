@@ -2,6 +2,7 @@
 Convert .ipynb to .html by nbconvert
 """
 
+import datetime
 import json
 import os
 import re
@@ -34,20 +35,29 @@ def get_all_problems():
         headers={"Content-Type": "application/json"},
         data=json.dumps(
             {
-                "query": "query allQuestions { allQuestions { titleSlug questionFrontendId } }"
+                "query": "query allQuestions { allQuestions { questionFrontendId titleSlug title difficulty isPaidOnly topicTags { name } } }"
             }
         ),
     )
     response.raise_for_status()
     data = response.json()
     all_problems = [
-        (int(q["questionFrontendId"]), q["titleSlug"]) for q in data["data"]["allQuestions"]
+        {
+            "id": int(q["questionFrontendId"]),
+            "slug": q["titleSlug"],
+            "title": q["title"],
+            "difficulty": q["difficulty"],
+            "paid": q["isPaidOnly"],
+            "tags": [t["name"] for t in q["topicTags"] or []],
+        }
+        for q in data["data"]["allQuestions"]
+        if q["questionFrontendId"].isdigit()
     ]
-    filtered_all_problems = [p for p in all_problems if p[0] < 10000]
-    max_id = max(p[0] for p in filtered_all_problems)
+    filtered_all_problems = [p for p in all_problems if p["id"] < 10000]
+    max_id = max(p["id"] for p in filtered_all_problems)
     problems = [None] * (max_id + 1)
     for p in filtered_all_problems:
-        problems[p[0]] = p[1]
+        problems[p["id"]] = p
     return problems
 
 
@@ -112,17 +122,45 @@ def convert(problem_id):
 
 
 def render_index(all_problems, solved_problems):
-    solved_problem_ids = solved_problems.keys()
-    solved_count = len(solved_problem_ids)
-    total_valid_count = sum(1 for _ in filter(lambda p: p, all_problems))
+    tags = sorted({t for p in all_problems if p for t in p["tags"]})
+    tag_index = {t: i for i, t in enumerate(tags)}
+    difficulties = ["Easy", "Medium", "Hard"]
+    stats = {d: {"solved": 0, "total": 0} for d in difficulties}
+
+    cells = []
+    for pid in range(1, len(all_problems)):
+        p = all_problems[pid]
+        if not p:
+            cells.append(None)
+            continue
+        solved = pid in solved_problems
+        stats[p["difficulty"]]["total"] += 1
+        if solved:
+            stats[p["difficulty"]]["solved"] += 1
+            filename = os.path.splitext(os.path.basename(solved_problems[pid]))[0]
+            href = "{}/{}.html".format(get_folder_for(pid, 100), filename)
+        else:
+            href = "https://leetcode.com/problems/{}/".format(p["slug"])
+        cells.append(
+            dict(
+                p,
+                solved=solved,
+                href=href,
+                tag_ids=" ".join(str(tag_index[t]) for t in p["tags"]),
+            )
+        )
+
+    solved_count = len(solved_problems)
+    total_valid_count = sum(s["total"] for s in stats.values())
 
     data = {
         "solved_count": solved_count,
-        "total_count": len(all_problems)-1,
         "total_valid_count": total_valid_count,
-        "progress_percentage": "{}".format(solved_count * 100 // total_valid_count),
-        "solved": set(solved_problem_ids),
-        "problems": all_problems,
+        "progress_percentage": "{:.1f}".format(solved_count * 100 / total_valid_count),
+        "blocks": [cells[i : i + 100] for i in range(0, len(cells), 100)],
+        "stats": stats,
+        "tags": tags,
+        "updated": datetime.date.today().isoformat(),
     }
 
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))

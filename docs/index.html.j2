@@ -3,54 +3,108 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>My LeetCode Progress</title>
-    <link rel="stylesheet" type="text/css" href="static/style_default.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LeetCode Notebook</title>
+    <meta name="description" content="Soros Liu's LeetCode solutions, written as Jupyter notebooks." />
+    <link rel="stylesheet" href="static/index.css" />
 </head>
 
 <body>
-    <div id="progress_page">
-        <div id="main_section">
-            <div id="progress_bar_section">
-                <h3>Solved {{ solved_count }} out of {{ total_valid_count }} problems</h3>
-                <div id="progress_bar_box" class="info">
-                    <div id="progress_bar" style="width:{{ progress_percentage }}%;background-color:#f93"></div>
-                    <span>Completed {{ progress_percentage }}% of the problems</span>
-                </div>
-            </div>
-            <div id="problems_solved_section">
-                <h3>Problems Solved</h3>
-                {%- for t in range(total_count // 100 + 1) -%}
-                <table class="grid problems_solved_table">
-                    {%- for r in range(5) -%}
-                    <tr>
-                        {%- for c in range(20) if t*100+r*20+c+1 <= total_count -%}
-                        <td class="{%- if (t*100+r*20+c+1) in solved -%}
-                                    problem_solved
-                                    {%- else -%}
-                                    problem_unsolved
-                                    {%- endif -%}">
-                            {%- if not problems[t*100+r*20+c+1] -%}
-                            <div style="color:gray" class="info"><del>{{ t*100+r*20+c+1 }}</del></div>
-                            {%- else -%}
-                            <a href="{%- if (t*100+r*20+c+1) in solved -%}
-                                {{ t*100+1 }}-{{ (t+1)*100 }}/{{ t*100+r*20+c+1 }}.{{ problems[t*100+r*20+c+1] }}.html
-                                {%- else -%}
-                                https://leetcode.com/problems/{{ problems[t*100+r*20+c+1] }}/
-                                {%- endif -%}" style="color:inherit;" target="_blank">
-                                <div style="" class="info">{{ t*100+r*20+c+1 }}
-                                    <span>&quot;{{ problems[t*100+r*20+c+1] }}&quot;</span>
-                                </div>
-                            </a>
-                            {%- endif -%}
-                        </td>
-                        {%- endfor -%}
-                    </tr>
-                    {%- endfor -%}
-                </table>
-                {%- endfor -%}
-            </div>
+    <header class="masthead">
+        <div class="masthead-top">
+            <p class="eyebrow">Soros Liu</p>
+            <nav class="links">
+                <a href="https://github.com/Sorosliu1029/LeetCode" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://leetcode.com/walle1029/" target="_blank" rel="noopener">LeetCode profile</a>
+            </nav>
         </div>
-    </div>
+        <h1>LeetCode Notebook</h1>
+
+        <section class="stats" aria-label="Progress">
+            <div class="headline">
+                <span class="big">{{ solved_count }}</span>
+                <span class="of">solved of {{ "{:,}".format(total_valid_count) }} problems
+                    · {{ progress_percentage }}%</span>
+            </div>
+            <div class="bar" role="img" aria-label="{{ progress_percentage }}% solved">
+                {%- for d, s in stats.items() %}
+                <span class="seg {{ d[0]|lower }}" style="width:{{ s.solved * 100 / total_valid_count }}%"></span>
+                {%- endfor %}
+            </div>
+            <dl class="breakdown">
+                {%- for d, s in stats.items() %}
+                <div class="row {{ d[0]|lower }}">
+                    <dt>{{ d }}</dt>
+                    <dd>
+                        <span class="num">{{ s.solved }}<small> / {{ "{:,}".format(s.total) }}</small></span>
+                        <span class="mini"><span style="width:{{ s.solved * 100 / s.total if s.total else 0 }}%"></span></span>
+                    </dd>
+                </div>
+                {%- endfor %}
+            </dl>
+        </section>
+    </header>
+
+    <main>
+        <form class="toolbar" id="filters" role="search" onsubmit="return false">
+            <input type="search" id="q" name="q" placeholder="Search title or #" autocomplete="off" aria-label="Search problems" />
+            <div class="chips" role="group" aria-label="Difficulty">
+                <label><input type="radio" name="d" value="" checked /><span>All</span></label>
+                <label class="e"><input type="radio" name="d" value="e" /><span>Easy</span></label>
+                <label class="m"><input type="radio" name="d" value="m" /><span>Medium</span></label>
+                <label class="h"><input type="radio" name="d" value="h" /><span>Hard</span></label>
+            </div>
+            <div class="chips" role="group" aria-label="Status">
+                <label><input type="radio" name="s" value="" checked /><span>All</span></label>
+                <label><input type="radio" name="s" value="s" /><span>Solved</span></label>
+                <label><input type="radio" name="s" value="u" /><span>Unsolved</span></label>
+            </div>
+            <select id="tag" name="t" aria-label="Topic">
+                <option value="">All topics</option>
+                {%- for t in tags %}
+                <option value="{{ loop.index0 }}">{{ t }}</option>
+                {%- endfor %}
+            </select>
+            <span class="count" id="count" aria-live="polite"></span>
+            <button type="button" id="clear" hidden>Clear</button>
+        </form>
+
+        <ol class="results" id="results" hidden></ol>
+
+        <div class="map" id="map">
+            {%- for block in blocks %}
+            {%- set start = loop.index0 * 100 + 1 %}
+            <section class="block">
+                {%- set n = block|select|selectattr("solved")|list|length %}
+                <h2><span>{{ start }}–{{ start + block|length - 1 }}</span>
+                    {%- if n %}<small title="{{ n }} solved">{{ n }}</small>{% endif %}</h2>
+                <div class="grid">
+                    {%- for p in block %}
+                    {%- if p %}
+                    <a class="c {{ p.difficulty[0]|lower }}{{ ' s' if p.solved }}{{ ' p' if p.paid }}" href="{{ p.href }}" target="_blank" rel="noopener" data-g="{{ p.tag_ids }}" aria-label="{{ p.id }}. {{ p.title }}"></a>
+                    {%- else %}
+                    <span class="c x"></span>
+                    {%- endif %}
+                    {%- endfor %}
+                </div>
+            </section>
+            {%- endfor %}
+        </div>
+
+        <ul class="legend">
+            <li><i class="c e s"></i>Easy</li>
+            <li><i class="c m s"></i>Medium</li>
+            <li><i class="c h s"></i>Hard</li>
+            <li><i class="c"></i>Unsolved</li>
+            <li><i class="c p"></i>Premium</li>
+        </ul>
+    </main>
+
+    <footer>Updated {{ updated }} · solutions open as notebooks, unsolved problems link to leetcode.com</footer>
+
+    <div class="tip" id="tip" hidden></div>
+    <script type="application/json" id="tags">{{ tags|tojson }}</script>
+    <script src="static/index.js"></script>
 </body>
 
 </html>
