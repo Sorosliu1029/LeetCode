@@ -3,6 +3,7 @@ Convert .ipynb to .html by nbconvert
 """
 
 import datetime
+import email.utils
 import html
 import json
 import os
@@ -121,6 +122,13 @@ def render_result(source):
             if value:
                 fields[label.strip()] = value
 
+    def finished_date():
+        value = fields.get("Finished At", "")
+        try:
+            return email.utils.parsedate_to_datetime(value).date().isoformat()
+        except (TypeError, ValueError):
+            return value  # older notebooks already store a bare date
+
     def beats(label):
         value = fields.get(label, "")
         return '<small>beats {}</small>'.format(html.escape(value[len("better than "):])) if value else ""
@@ -132,7 +140,7 @@ def render_result(source):
         ("Memory", html.escape(fields.get("Memory", "")) + beats("Memory Percentile")),
     ]
     stats += [(label, "<code>{}</code>".format(html.escape(fields[label]))) for label in ("Input", "Output", "Expected") if label in fields]
-    stats.append(("Finished", html.escape(fields.get("Finished At", ""))))
+    stats.append(("Finished", html.escape(finished_date())))
     status = "accepted" if fields.get("Result") == "Accepted" else "rejected"
     return '<dl class="result {}">{}</dl>'.format(
         status, "".join("<div><dt>{}</dt><dd>{}</dd></div>".format(k, v) for k, v in stats if v)
