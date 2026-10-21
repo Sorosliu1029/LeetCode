@@ -3,6 +3,7 @@ Convert .ipynb to .html by nbconvert
 """
 
 import datetime
+import html
 import json
 import os
 import re
@@ -13,9 +14,12 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 from jinja2 import Environment, FileSystemLoader
 from nbconvert import HTMLExporter
+from nbconvert.preprocessors import Preprocessor
 
 TEMPLATE_DIR = "docs"
 INDEX_HTML_PATH = os.path.join("docs", "index.html")
+NOTEBOOK_TEMPLATE_DIR = "templates"
+GITHUB_BLOB_URL = "https://github.com/Sorosliu1029/LeetCode/blob/master/"
 
 
 def get_folder_for(question_id, interval):
@@ -61,18 +65,161 @@ def get_all_problems():
     return problems
 
 
+def split_sections(source):
+    """Split markdown into {heading: body} by its '#### ' headings."""
+    sections = {}
+    heading = None
+    for line in source.splitlines():
+        if line.startswith("#### "):
+            heading = line[5:].strip()
+            sections[heading] = []
+        elif heading is not None:
+            sections[heading].append(line)
+    return {h: "\n".join(body).strip() for h, body in sections.items()}
+
+
+def render_meta(source):
+    sections = split_sections(source)
+    parts = []
+    for heading in sections:
+        m = re.match(r"Difficulty:\s*(\w+),\s*AC rate:\s*([\d.]+%)", heading)
+        if m:
+            parts.append(
+                '<span class="pill {}">{}</span><span class="ac">AC rate {}</span>'.format(
+                    m.group(1).lower(), m.group(1), m.group(2)
+                )
+            )
+    if "Topics:" in sections:
+        tags = [t.strip() for t in sections["Topics:"].split("|")]
+    else:
+        tags = [t.lstrip("- ").strip() for t in sections.get("Question Tags:", "").splitlines()]
+    parts.append(
+        '<ul class="tags">{}</ul>'.format(
+            "".join("<li>{}</li>".format(html.escape(t)) for t in tags if t)
+        )
+    )
+    links = re.findall(r"\[(?:Question )?([^\]]+)\]\(([^)]+)\)", sections.get("Links:", ""))
+    parts.append(
+        '<span class="links">{}</span>'.format(
+            "".join('<a href="{}" target="_blank" rel="noopener">{}</a>'.format(url, text) for text, url in links)
+        )
+    )
+    meta = '<div class="meta">{}</div>'.format("".join(parts))
+    hints = sections.get("Hints:")
+    if hints:
+        meta += "\n\n<details class=\"hints\"><summary>Hints</summary>\n\n{}\n\n</details>".format(hints)
+    return meta
+
+
+def render_result(source):
+    fields = {}
+    for line in source.splitlines():
+        line = re.sub(r"^\S+\s+", "", line.strip())  # drop the leading emoji
+        for pair in re.split(r",\s*(?=[A-Z][\w ]*:)", line):
+            label, _, value = pair.partition(":")
+            value = value.strip().strip("`").strip()
+            if value:
+                fields[label.strip()] = value
+
+    def beats(label):
+        value = fields.get(label, "")
+        return '<small>beats {}</small>'.format(html.escape(value[len("better than "):])) if value else ""
+
+    stats = [
+        ("Result", html.escape(fields.get("Result", ""))),
+        ("Tests", html.escape(fields.get("Passed Test Case", ""))),
+        ("Runtime", html.escape(fields.get("Runtime", "")) + beats("Runtime Percentile")),
+        ("Memory", html.escape(fields.get("Memory", "")) + beats("Memory Percentile")),
+    ]
+    stats += [(label, "<code>{}</code>".format(html.escape(fields[label]))) for label in ("Input", "Output", "Expected") if label in fields]
+    stats.append(("Finished", html.escape(fields.get("Finished At", ""))))
+    status = "accepted" if fields.get("Result") == "Accepted" else "rejected"
+    return '<dl class="result {}">{}</dl>'.format(
+        status, "".join("<div><dt>{}</dt><dd>{}</dd></div>".format(k, v) for k, v in stats if v)
+    )
+
+
+def is_result(source):
+    return "Result:" in source and "Passed Test Case" in source
+
+
+class NotebookStyler(Preprocessor):
+    """Tag the standard cells of a solution notebook and tidy their markdown."""
+
+    def preprocess(self, nb, resources):
+        page = resources.setdefault("page", {})
+        cells = []
+        meta_cell = None
+        statement_tagged = False
+        for cell in nb.cells:
+            source = cell.source
+            tag = None
+            if cell.cell_type == "markdown":
+                m = re.match(r"^###\s+(\d+)\.\s+(.*)$", source.strip())
+                if m:
+                    tag = "title"
+                    page["title"] = m.group(2)
+                    cell.source = '<p class="pid">#{}</p>\n\n# {}'.format(m.group(1), m.group(2))
+                elif "#### Difficulty" in source:
+                    tag = "meta"
+                    cell.source = render_meta(source)
+                elif re.match(r"^#### (Test Case|Sample Test Case)", source):
+                    tag = "tests"
+                    cell.source = source.split("\n", 1)[1] if "\n" in source else ""
+                elif "What's your idea?" in source:
+                    tag = "idea"
+                    lines = [l for l in source.strip().splitlines() if l.strip() not in ("---", "What's your idea?")]
+                    cell.source = "\n".join(lines).strip()
+                elif is_result(source):
+                    tag = "result"
+                    cell.source = render_result(source)
+                elif not statement_tagged:
+                    tag = "statement"
+                    statement_tagged = True
+                    source = re.sub(r"^#### Content\s*\n", "", source)
+                    cell.source = re.sub(r"<p>(&nbsp;|\s)*</p>", "", source)
+                if "$" in cell.source:
+                    page["has_math"] = True
+            elif cell.cell_type == "code":
+                for output in cell.get("outputs", []):
+                    md = output.get("data", {}).get("text/markdown")
+                    if md and is_result(md):
+                        tag = "submit"
+                        output["data"]["text/markdown"] = render_result(md)
+            if tag:
+                cell.metadata["tags"] = list(cell.metadata.get("tags", [])) + [tag]
+            if tag == "meta":
+                meta_cell = cell
+            else:
+                cells.append(cell)
+        if meta_cell is not None:
+            titles = [i for i, c in enumerate(cells) if "title" in c.metadata.get("tags", [])]
+            cells.insert(titles[0] + 1 if titles else 0, meta_cell)
+        nb.cells = cells
+        return nb, resources
+
+
 class Converter(object):
     def __init__(self):
-        self.html_exporter = HTMLExporter()
+        self.html_exporter = HTMLExporter(
+            template_name="notebook", extra_template_basedirs=[NOTEBOOK_TEMPLATE_DIR]
+        )
         self.html_exporter.exclude_input_prompt = True
         self.html_exporter.exclude_output_prompt = True
+        self.html_exporter.register_preprocessor(NotebookStyler(), enabled=True)
 
-    def convert(self, ipynb_path):
-        return self.html_exporter.from_filename(ipynb_path)
+    def convert(self, ipynb_path, page):
+        return self.html_exporter.from_filename(ipynb_path, resources={"page": page})
 
-    def write(self, problem_id, source_ipynb_path):
+    def write(self, problem_id, source_ipynb_path, neighbours=(None, None)):
         assert os.path.exists(source_ipynb_path)
-        body, resources = self.convert(source_ipynb_path)
+        page = {
+            "id": problem_id,
+            "source": GITHUB_BLOB_URL + os.path.relpath(source_ipynb_path),
+            "prev": neighbours[0],
+            "next": neighbours[1],
+        }
+        body, resources = self.convert(source_ipynb_path, page)
         name = resources["metadata"]["name"]
 
         directory = os.path.join("docs", get_folder_for(problem_id, 100))
@@ -82,6 +229,14 @@ class Converter(object):
         with open(write_filename, "wt", encoding="utf-8") as f:
             f.write(body)
         return "{} write success".format(write_filename)
+
+
+def page_link(problem_id, ipynb_path):
+    name = os.path.splitext(os.path.basename(ipynb_path))[0]
+    return {
+        "id": problem_id,
+        "href": "../{}/{}.html".format(get_folder_for(problem_id, 100), name),
+    }
 
 
 def convert(problem_id):
@@ -109,8 +264,16 @@ def convert(problem_id):
     def thread_initializer():
         local.converter = Converter()
 
+    # previous / next solved problem, for the pager on each notebook page
+    ids = sorted(solved_problems)
+    links = [page_link(pid, solved_problems[pid]) for pid in ids]
+    neighbours = {
+        pid: (links[i - 1] if i > 0 else None, links[i + 1] if i + 1 < len(ids) else None)
+        for i, pid in enumerate(ids)
+    }
+
     def converter_write(pid, path):
-        return local.converter.write(pid, path)
+        return local.converter.write(pid, path, neighbours[pid])
 
     with ThreadPoolExecutor(max_workers=10, initializer=thread_initializer) as executor:
         for r in executor.map(

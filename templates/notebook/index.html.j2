@@ -1,0 +1,41 @@
+{%- extends 'lab/index.html.j2' -%}
+{% from 'mathjax.html.j2' import mathjax %}
+{%- set page = resources.page -%}
+
+{%- block header -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ page.id }}. {{ page.title | default(resources.metadata.name) }} · LeetCode Notebook</title>
+<link rel="stylesheet" href="../static/notebook.css" />
+{%- if page.has_math %}
+{{ mathjax(resources.mathjax_url) }}
+{%- endif %}
+</head>
+{%- endblock header -%}
+
+{%- block body_header -%}
+<body>
+<nav class="topbar">
+    <a class="home" href="../index.html">← LeetCode Notebook</a>
+    <span class="pager">
+        {%- if page.prev %}<a href="{{ page.prev.href }}" rel="prev">‹ #{{ page.prev.id }}</a>{% endif %}
+        {%- if page.next %}<a href="{{ page.next.href }}" rel="next">#{{ page.next.id }} ›</a>{% endif %}
+    </span>
+</nav>
+<main class="notebook">
+{%- endblock body_header -%}
+
+{% block body_footer %}
+</main>
+<footer>
+    <a href="{{ page.source }}" target="_blank" rel="noopener">View notebook source</a>
+</footer>
+</body>
+{% endblock body_footer %}
+
+{% block footer %}
+</html>
+{% endblock footer %}
